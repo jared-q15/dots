@@ -194,10 +194,13 @@
           }),
         })
 
-        require("nvim-treesitter.configs").setup({
-          highlight = { enable = true },
-          indent = { enable = true },
-        })
+        local ok_ts, ts_configs = pcall(require, "nvim-treesitter.configs")
+        if ok_ts then
+          ts_configs.setup({
+            highlight = { enable = true },
+            indent = { enable = true },
+          })
+        end
 
         local builtin = require("telescope.builtin")
 
