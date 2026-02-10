@@ -1,12 +1,17 @@
 {
+  config,
   lib,
   pkgs,
   ...
-}: {
+}: let
+  owner = config.local.users.ownerName;
+in {
   imports = [
     ./morbo-secrets.nix
     ../../modules/nixos/optional/ausweisapp.nix
     ../../modules/nixos/optional/cache-server.nix
+    ../../modules/nixos/optional/cloudflared.nix
+    ../../modules/nixos/optional/cloudflare-ssh-ca.nix
     ../../modules/nixos/optional/desktop.nix
     ../../modules/nixos/optional/docker.nix
     ../../modules/nixos/optional/ephemeral-btrfs.nix
@@ -25,12 +30,20 @@
     ../../modules/nixos/optional/yubikey.nix
   ];
 
-  networking = {
-    hostName = "hermes";
-    firewall.allowedTCPPorts = [18789];
-  };
+  networking.hostName = "hermes";
 
   local.users.enableBotUsers = true;
+
+  # Allow the configured human owner account to access and manage Morbo's workspace.
+  users.users.${owner}.extraGroups = ["morbo"];
+
+  # Ensure existing + newly created files under /home/morbo are accessible.
+  system.activationScripts.owner-morbo-home-acl.text = ''
+    if [ -d /home/morbo ]; then
+      ${pkgs.acl}/bin/setfacl -R -m u:${owner}:rwx /home/morbo
+      ${pkgs.acl}/bin/setfacl -R -d -m u:${owner}:rwx /home/morbo
+    fi
+  '';
 
   services.envfs.enable = true;
 
